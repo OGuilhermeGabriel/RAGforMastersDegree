@@ -1,0 +1,36 @@
+# Configuração local do agente
+AGENTS.md
+
+# Variáveis de ambiente e segredos
+.env
+.env.*
+!.env.example
+
+# Chaves SSH / certificados (ex.: labsuser.pem da AWS Academy)
+*.pem
+*.key
+
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.sqlite3
+db.sqlite3
+staticfiles/
+media/
+*.log
+
+# Docker / temporários locais
+.docker/
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Relatório
+*AWS.pdf
