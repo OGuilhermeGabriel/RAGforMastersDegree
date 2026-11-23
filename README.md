@@ -5,7 +5,7 @@ Projeto Final da disciplina de **Sistemas Distribuídos (UFERSA)**.
 Aplicação web distribuída em **três camadas** que permite a usuários autenticados fazer upload de documentos PDF (com texto selecionável) para seu acervo privado e realizar consultas em linguagem natural com respostas fundamentadas (*grounding*) via **Lean RAG** (*Retrieval-Augmented Generation*).
 
 - **Frontend:** `https://guilhermegabriel.grupo-05.sd.ufersa.dev.br`
-- **API RESTful:** `https://api.guilhermegabriel.grupo-05.sd.ufersa.dev.br`
+- **API RESTful:** `https://apirag.guilhermegabriel.grupo-05.sd.ufersa.dev.br`
 
 ---
 
