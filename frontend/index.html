@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DocRAG UFERSA — Consulta Inteligente a Documentos PDF</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- TELA DE AUTENTICAÇÃO -->
+  <main id="auth-view" class="auth-shell">
+    <section class="auth-hero">
+      <div class="brand-pill">Sistemas Distribuídos • UFERSA • AWS + RAG</div>
+      <h1>Consulta Inteligente a Editais e Normas em PDF</h1>
+      <p class="hero-lead">
+        Faça upload dos seus documentos PDF para seu acervo privado e faça perguntas em linguagem natural com respostas fundamentadas exclusivamente no texto original.
+      </p>
+      <ul class="feature-list">
+        <li>
+          <span class="feature-dot"></span>
+          <div>
+            <strong>Busca Semântica (pgvector)</strong>
+            <p>Encontre normas e requisitos mesmo usando sinônimos ou formulações diferentes.</p>
+          </div>
+        </li>
+        <li>
+          <span class="feature-dot"></span>
+          <div>
+            <strong>Respostas Fundamentadas (Grounding)</strong>
+            <p>Baseadas nos 3 trechos mais relevantes do documento, com rastreabilidade das fontes.</p>
+          </div>
+        </li>
+        <li>
+          <span class="feature-dot"></span>
+          <div>
+            <strong>Isolamento Multiusuário (JWT)</strong>
+            <p>Seu acervo e histórico de consultas ficam protegidos e isolados por conta.</p>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="auth-card">
+      <div class="auth-tabs" role="tablist">
+        <button id="tab-login" class="auth-tab active" type="button" role="tab" aria-selected="true">
+          Entrar
+        </button>
+        <button id="tab-register" class="auth-tab" type="button" role="tab" aria-selected="false">
+          Criar Conta
+        </button>
+      </div>
+
+      <div id="auth-alert" class="inline-alert hidden" role="alert"></div>
+
+      <!-- FORM LOGIN -->
+      <form id="login-form" class="auth-form" autocomplete="on">
+        <div class="field">
+          <label for="login-email">E-mail</label>
+          <input id="login-email" type="email" placeholder="voce@ufersa.edu.br" required />
+        </div>
+        <div class="field">
+          <label for="login-password">Senha</label>
+          <input id="login-password" type="password" placeholder="Sua senha" minlength="6" required />
+        </div>
+        <button id="login-submit" type="submit" class="btn btn-primary btn-full">
+          Entrar no Sistema
+        </button>
+      </form>
+
+      <!-- FORM CADASTRO -->
+      <form id="register-form" class="auth-form hidden" autocomplete="on">
+        <div class="field">
+          <label for="register-name">Nome completo</label>
+          <input id="register-name" type="text" placeholder="Seu nome" maxlength="150" required />
+        </div>
+        <div class="field">
+          <label for="register-email">E-mail</label>
+          <input id="register-email" type="email" placeholder="voce@ufersa.edu.br" required />
+        </div>
+        <div class="field">
+          <label for="register-password">Senha (mínimo 6 caracteres)</label>
+          <input id="register-password" type="password" placeholder="Crie uma senha forte" minlength="6" maxlength="72" required />
+        </div>
+        <button id="register-submit" type="submit" class="btn btn-primary btn-full">
+          Criar Conta
+        </button>
+      </form>
+
+      <footer class="auth-footer">
+        <span id="api-env-badge" class="env-badge">API: conectando...</span>
+      </footer>
+    </section>
+  </main>
+
+  <!-- TELA PRINCIPAL DA APLICAÇÃO -->
+  <div id="app-view" class="app-shell hidden">
+    <header class="topbar">
+      <div class="topbar-brand">
+        <div class="logo-mark">RAG</div>
+        <div>
+          <strong>DocRAG UFERSA</strong>
+          <span class="topbar-sub">Assistente Distribuído de Documentos PDF</span>
+        </div>
+      </div>
+
+      <div class="topbar-user">
+        <div class="user-info">
+          <span id="user-name" class="user-name">Usuário</span>
+          <span id="user-email" class="user-email">email@ufersa.edu.br</span>
+        </div>
+        <button id="logout-btn" type="button" class="btn btn-ghost">Sair</button>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <!-- BARRA LATERAL: UPLOAD E ACERVO -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <h2>Meus Documentos</h2>
+          <span id="docs-count-badge" class="count-pill">0</span>
+        </div>
+
+        <form id="upload-form" class="upload-box">
+          <label for="pdf-input" id="dropzone" class="dropzone">
+            <input id="pdf-input" type="file" accept=".pdf,application/pdf" hidden />
+            <div class="dropzone-icon">PDF</div>
+            <div class="dropzone-text">
+              <strong>Enviar novo PDF</strong>
+              <span>Clique ou arraste um edital (máx. 20 MB)</span>
+            </div>
+          </label>
+          <div id="upload-status" class="upload-status hidden">
+            <span class="spinner"></span>
+            <span id="upload-status-text">Extraindo texto e gerando vetores 768D...</span>
+          </div>
+        </form>
+
+        <div id="documents-list" class="documents-list">
+          <div class="empty-docs">
+            Nenhum PDF enviado ainda. Faça upload de um documento acima para começar.
+          </div>
+        </div>
+      </aside>
+
+      <!-- ÁREA DE CHAT E HISTÓRICO -->
+      <section class="chat-panel">
+        <div id="no-doc-selected" class="empty-chat-state">
+          <div class="empty-icon">📄</div>
+          <h3>Selecione ou envie um documento PDF</h3>
+          <p>
+            Escolha um edital ou norma na barra lateral para consultar por linguagem natural e visualizar o histórico de perguntas e respostas.
+          </p>
+        </div>
+
+        <div id="chat-container" class="chat-container hidden">
+          <div class="chat-header">
+            <div class="chat-doc-meta">
+              <h2 id="active-doc-title">Documento.pdf</h2>
+              <div class="chat-doc-sub">
+                <span id="active-doc-chunks" class="meta-chip">0 trechos indexados</span>
+                <span id="active-doc-date" class="meta-chip">Enviado em --</span>
+              </div>
+            </div>
+            <button id="delete-active-doc-btn" type="button" class="btn btn-danger-outline">
+              Excluir PDF
+            </button>
+          </div>
+
+          <div id="messages-area" class="messages-area"></div>
+
+          <div id="quick-prompts" class="quick-prompts hidden">
+            <span class="quick-label">Sugestões para testar:</span>
+            <button type="button" class="chip-btn" data-prompt="Quais documentos são exigidos para realizar a inscrição?">
+              Documentos para inscrição
+            </button>
+            <button type="button" class="chip-btn" data-prompt="Qual é o cronograma e o prazo de inscrição deste edital?">
+              Cronograma e prazos
+            </button>
+            <button type="button" class="chip-btn" data-prompt="Quantas vagas são oferecidas e quais os critérios de seleção?">
+              Vagas e critérios
+            </button>
+          </div>
+
+          <form id="query-form" class="query-form">
+            <textarea
+              id="question-input"
+              rows="2"
+              maxlength="2000"
+              placeholder="Faça uma pergunta sobre o documento selecionado... (Enter envia, Shift+Enter quebra linha)"
+              required
+            ></textarea>
+            <button id="ask-submit" type="submit" class="btn btn-primary">
+              Perguntar
+            </button>
+          </form>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
