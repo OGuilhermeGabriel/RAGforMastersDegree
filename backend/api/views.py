@@ -10,6 +10,7 @@ from rest_framework.views import APIView
 from .authentication import create_jwt_token, hash_password, verify_password
 from .models import Document, DocumentChunk, Query, User
 from .rag import (
+    EmbeddingRateLimitError,
     chunk_text,
     extract_text_from_pdf,
     generate_embeddings,
@@ -185,6 +186,11 @@ class DocumentListCreateView(APIView):
 
         try:
             embeddings = generate_embeddings(chunks, task_type="RETRIEVAL_DOCUMENT")
+        except EmbeddingRateLimitError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
         except Exception as exc:
             return Response(
                 {"detail": f"Erro ao gerar embeddings na API Gemini: {exc}"},
@@ -284,6 +290,11 @@ class DocumentQueryListCreateView(APIView):
 
         try:
             query_embedding = generate_query_embedding(question)
+        except EmbeddingRateLimitError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
         except Exception as exc:
             return Response(
                 {"detail": f"Erro ao gerar embedding da pergunta: {exc}"},
